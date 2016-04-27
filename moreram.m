@@ -11,7 +11,8 @@ typedef struct moreram_osx_node_s moreram_osx_node_t;
 struct moreram_osx_node_s
 {
     id<MTLBuffer> buffer;
-    size_t length;
+    size_t size;
+    void* address;
 
     moreram_osx_node_t* prev;
     moreram_osx_node_t* next;
@@ -119,7 +120,49 @@ moreram_osx_finalize()
 void*
 malloc(size_t size)
 {
-    return 0;
+    void* mem = g_moreram_osx_context.libc_malloc_func(size);
+    if(mem)
+    {
+        // We allocated memory conventionally.
+        return mem;
+    }
+
+    moreram_osx_node_t* node = (moreram_osx_node_t*) g_moreram_osx_context.libc_malloc_func(sizeof(moreram_osx_node_t));
+    if(!node)
+    {
+        // Failed node allocation.
+        errno = ENOMEM;
+        return 0;
+    }
+
+    id<MTLBuffer> buffer = [g_moreram_osx_context.device newBufferWithLength: size options: MTLResourceCPUCacheModeDefaultCache];
+    if(!buffer)
+    {
+        // Failed buffer allocation.
+        g_moreram_osx_context.libc_free_func(node);
+        errno = ENOMEM;
+        return 0;
+    }
+
+    node->buffer = buffer;
+    node->size = size;
+    node->address = [buffer contents];
+    node->next = 0;
+    node->prev = 0;
+
+    if(g_moreram_osx_context.tail)
+    {
+        g_moreram_osx_context.tail->next = node;
+        node->prev = g_moreram_osx_context.tail;
+        g_moreram_osx_context.tail = node;
+    }
+    else
+    {
+        g_moreram_osx_context.head = node;
+        g_moreram_osx_context.tail = node;
+    }
+
+    return node->address;
 }
 
 void

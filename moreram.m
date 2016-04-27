@@ -135,8 +135,8 @@ malloc(size_t size)
         return 0;
     }
 
-    id<MTLBuffer> buffer = [g_moreram_osx_context.device newBufferWithLength: size options: MTLResourceCPUCacheModeDefaultCache];
-    if(!buffer)
+    node->buffer = [g_moreram_osx_context.device newBufferWithLength: size options: MTLResourceCPUCacheModeDefaultCache];
+    if(!node->buffer)
     {
         // Failed buffer allocation.
         g_moreram_osx_context.libc_free_func(node);
@@ -144,9 +144,8 @@ malloc(size_t size)
         return 0;
     }
 
-    node->buffer = buffer;
+    node->address = [node->buffer contents];
     node->size = size;
-    node->address = [buffer contents];
     node->next = 0;
     node->prev = 0;
 

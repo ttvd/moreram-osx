@@ -167,13 +167,130 @@ malloc(size_t size)
 void
 free(void* address)
 {
+    if(!address)
+    {
+        return;
+    }
 
+    [g_moreram_osx_context.lock lock];
+
+    moreram_osx_node_t* node = g_moreram_osx_context.head;
+    while(node)
+    {
+        if(node->address != address)
+        {
+            node = node->next;
+            continue;
+        }
+
+        if(g_moreram_osx_context.head == node && g_moreram_osx_context.tail == node)
+        {
+            g_moreram_osx_context.head = 0;
+            g_moreram_osx_context.tail = 0;
+        }
+        else if(g_moreram_osx_context.head == node)
+        {
+            g_moreram_osx_context.head = node->next;
+            g_moreram_osx_context.tail = 0;
+        }
+        else if(g_moreram_osx_context.tail == node)
+        {
+            g_moreram_osx_context.tail = node->prev;
+            g_moreram_osx_context.head = 0;
+        }
+        else
+        {
+            moreram_osx_node_t* next = node->next;
+            moreram_osx_node_t* prev = node->prev;
+            next->prev = prev;
+            prev->next = next;
+        }
+
+        g_moreram_osx_context.libc_free_func(node);
+
+        [g_moreram_osx_context.lock unlock];
+        return;
+    }
+
+    [g_moreram_osx_context.lock unlock];
+
+    // We did not find this address, forward to standard mem free.
+    g_moreram_osx_context.libc_free_func(address);
 }
 
 void*
 realloc(void* address, size_t size)
 {
-    return 0;
+    if(!size)
+    {
+        free(address);
+    }
+
+    [g_moreram_osx_context.lock lock];
+
+    moreram_osx_node_t* node = g_moreram_osx_context.head;
+    while(node)
+    {
+        if(node->address != address)
+        {
+            node = node->next;
+            continue;
+        }
+
+        // If we are shrinking, we can reuse same block.
+        if(node->size >= size)
+        {
+            node->size = size;
+            [g_moreram_osx_context.lock unlock];
+            return address;
+        }
+
+        // Get more memory for resizing.
+        [g_moreram_osx_context.lock unlock];
+        void* resize = malloc(size);
+        if(!resize)
+        {
+            return 0;
+        }
+
+        [g_moreram_osx_context.lock lock];
+
+        // Copy memory.
+        memcpy(resize, address, node->size);
+
+        if(g_moreram_osx_context.head == node && g_moreram_osx_context.tail == node)
+        {
+            g_moreram_osx_context.head = 0;
+            g_moreram_osx_context.tail = 0;
+        }
+        else if(g_moreram_osx_context.head == node)
+        {
+            g_moreram_osx_context.head = node->next;
+            g_moreram_osx_context.tail = 0;
+        }
+        else if(g_moreram_osx_context.tail == node)
+        {
+            g_moreram_osx_context.tail = node->prev;
+            g_moreram_osx_context.head = 0;
+        }
+        else
+        {
+            moreram_osx_node_t* next = node->next;
+            moreram_osx_node_t* prev = node->prev;
+            next->prev = prev;
+            prev->next = next;
+        }
+
+        g_moreram_osx_context.libc_free_func(node);
+
+        [g_moreram_osx_context.lock unlock];
+        return resize;
+    }
+
+    [g_moreram_osx_context.lock unlock];
+
+    // We did not find this address, forward to standard mem realloc.
+    return g_moreram_osx_context.libc_realloc_func(address, size);
 }
 
 void*

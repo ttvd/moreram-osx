@@ -296,5 +296,18 @@ realloc(void* address, size_t size)
 void*
 calloc(size_t num, size_t size)
 {
-    return 0;
+    void* mem = g_moreram_osx_context.libc_calloc_func(num, size);
+    if(mem)
+    {
+        // Allocated conventionally.
+        return mem;
+    }
+
+    mem = malloc(num * size);
+    if(mem)
+    {
+        memset(mem, 0, num * size);
+    }
+
+    return mem;
 }

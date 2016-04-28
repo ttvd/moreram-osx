@@ -303,6 +303,12 @@ realloc(void* address, size_t size)
 void*
 calloc(size_t num, size_t size)
 {
+    if(size && (num > (size_t) -1/size))
+    {
+        errno = ENOMEM;
+        return 0;
+    }
+
     void* mem = g_moreram_osx_context.libc_calloc_func(num, size);
     if(mem)
     {

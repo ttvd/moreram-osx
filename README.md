@@ -6,6 +6,7 @@
 are only triggered when regular malloc/realloc/calloc/free calls fail. Otherwise it will use default calls.
 * This is inspired by [moreram](https://github.com/graphitemaster/moreram)
 * This is perhaps a joke.
+* This can potentially waste memory (due to shadowing).
 * This is still work in progress.
 
 ## License

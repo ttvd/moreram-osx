@@ -1,5 +1,4 @@
 # moreram-osx
------
 
 ## Notes
 
@@ -8,8 +7,6 @@ are only triggered when regular malloc/realloc/calloc/free calls fail. Otherwise
 * This is inspired by [moreram](https://github.com/graphitemaster/moreram)
 * This is perhaps a joke.
 * This is still work in progress.
-
------
 
 ## License
 

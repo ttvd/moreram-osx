@@ -206,6 +206,7 @@ free(void* address)
             prev->next = next;
         }
 
+        [node->buffer release];
         g_moreram_osx_context.libc_free_func(node);
 
         [g_moreram_osx_context.lock unlock];
@@ -281,6 +282,7 @@ realloc(void* address, size_t size)
             prev->next = next;
         }
 
+        [node->buffer release];
         g_moreram_osx_context.libc_free_func(node);
 
         [g_moreram_osx_context.lock unlock];

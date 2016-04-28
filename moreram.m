@@ -127,11 +127,14 @@ malloc(size_t size)
         return mem;
     }
 
+    [g_moreram_osx_context.lock lock];
+
     moreram_osx_node_t* node = (moreram_osx_node_t*) g_moreram_osx_context.libc_malloc_func(sizeof(moreram_osx_node_t));
     if(!node)
     {
         // Failed node allocation.
         errno = ENOMEM;
+        [g_moreram_osx_context.lock unlock];
         return 0;
     }
 
@@ -141,6 +144,7 @@ malloc(size_t size)
         // Failed buffer allocation.
         g_moreram_osx_context.libc_free_func(node);
         errno = ENOMEM;
+        [g_moreram_osx_context.lock unlock];
         return 0;
     }
 
@@ -161,6 +165,7 @@ malloc(size_t size)
         g_moreram_osx_context.tail = node;
     }
 
+    [g_moreram_osx_context.lock unlock];
     return node->address;
 }
 

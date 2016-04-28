@@ -317,10 +317,5 @@ calloc(size_t num, size_t size)
     }
 
     mem = malloc(num * size);
-    if(mem)
-    {
-        memset(mem, 0, num * size);
-    }
-
     return mem;
 }

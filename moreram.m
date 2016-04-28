@@ -303,7 +303,7 @@ realloc(void* address, size_t size)
 void*
 calloc(size_t num, size_t size)
 {
-    if(size && (num > (size_t) -1/size))
+    if(size && (num > (size_t) -1 / size))
     {
         errno = ENOMEM;
         return 0;

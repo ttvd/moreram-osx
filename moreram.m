@@ -127,29 +127,23 @@ malloc(size_t size)
         return mem;
     }
 
+    size += sizeof(moreram_osx_node_t);
+
     [g_moreram_osx_context.lock lock];
 
-    moreram_osx_node_t* node = (moreram_osx_node_t*) g_moreram_osx_context.libc_malloc_func(sizeof(moreram_osx_node_t));
-    if(!node)
-    {
-        // Failed node allocation.
-        errno = ENOMEM;
-        [g_moreram_osx_context.lock unlock];
-        return 0;
-    }
-
-    node->buffer = [g_moreram_osx_context.device newBufferWithLength: size options: MTLResourceCPUCacheModeDefaultCache];
-    if(!node->buffer)
+    id<MTLBuffer> buffer = [g_moreram_osx_context.device newBufferWithLength: size options: MTLResourceCPUCacheModeDefaultCache];
+    if(!buffer)
     {
         // Failed buffer allocation.
-        g_moreram_osx_context.libc_free_func(node);
         errno = ENOMEM;
         [g_moreram_osx_context.lock unlock];
         return 0;
     }
 
-    node->address = [node->buffer contents];
-    node->size = size;
+    moreram_osx_node_t* node = (moreram_osx_node_t*) [node->buffer contents];
+    node->address = node + 1;
+    node->buffer = buffer;
+    node->size = size - sizeof(moreram_osx_node_t);
     node->next = 0;
     node->prev = 0;
 
@@ -212,8 +206,6 @@ free(void* address)
         }
 
         [node->buffer release];
-        g_moreram_osx_context.libc_free_func(node);
-
         [g_moreram_osx_context.lock unlock];
         return;
     }
@@ -261,7 +253,6 @@ realloc(void* address, size_t size)
 
         [g_moreram_osx_context.lock lock];
 
-        // Copy memory.
         memcpy(resize, address, node->size);
 
         if(g_moreram_osx_context.head == node && g_moreram_osx_context.tail == node)
@@ -288,9 +279,8 @@ realloc(void* address, size_t size)
         }
 
         [node->buffer release];
-        g_moreram_osx_context.libc_free_func(node);
-
         [g_moreram_osx_context.lock unlock];
+
         return resize;
     }
 
@@ -316,6 +306,7 @@ calloc(size_t num, size_t size)
         return mem;
     }
 
+    // Metal is guaranteed to zero the storage.
     mem = malloc(num * size);
     return mem;
 }

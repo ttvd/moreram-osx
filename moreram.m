@@ -103,10 +103,9 @@ moreram_osx_finalize()
     moreram_osx_node_t* node = g_moreram_osx_context.head;
     while(node)
     {
+       moreram_osx_node_t* next = node->next;
        [node->buffer release];
-       node->buffer = 0;
-       node = node->next;
-       g_moreram_osx_context.libc_free_func(node);
+       node = next;
     }
 
     g_moreram_osx_context.head = 0;

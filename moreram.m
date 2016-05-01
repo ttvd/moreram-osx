@@ -307,5 +307,18 @@ calloc(size_t num, size_t size)
 
     // Metal is guaranteed to zero the storage.
     mem = malloc(num * size);
+    if(mem)
+    {
+        size_t* z;
+        size = (size + sizeof *z - 1) / sizeof *z;
+        for(z = mem; size; size--, z++)
+        {
+            if(*z)
+            {
+                *z = 0;
+            }
+        }
+    }
+
     return mem;
 }

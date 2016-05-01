@@ -150,6 +150,8 @@ malloc(size_t size)
     }
 
     moreram_osx_node_t* node = (moreram_osx_node_t*) [node->buffer contents];
+    moreram_osx_compile_barrier();
+
     node->address = node + 1;
     node->buffer = buffer;
     node->size = size - sizeof(moreram_osx_node_t);

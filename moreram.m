@@ -104,8 +104,8 @@ moreram_osx_finalize()
     while(node)
     {
        moreram_osx_node_t* next = node->next;
-
        moreram_osx_compile_barrier();
+
        [node->buffer release];
        moreram_osx_compile_barrier();
 
@@ -214,7 +214,9 @@ free(void* address)
             prev->next = next;
         }
 
+        moreram_osx_compile_barrier();
         [node->buffer release];
+
         [g_moreram_osx_context.lock unlock];
         return;
     }
@@ -263,6 +265,7 @@ realloc(void* address, size_t size)
         [g_moreram_osx_context.lock lock];
 
         memcpy(resize, address, node->size);
+        moreram_osx_compile_barrier();
 
         if(g_moreram_osx_context.head == node && g_moreram_osx_context.tail == node)
         {
@@ -287,7 +290,9 @@ realloc(void* address, size_t size)
             prev->next = next;
         }
 
+        moreram_osx_compile_barrier();
         [node->buffer release];
+
         [g_moreram_osx_context.lock unlock];
 
         return resize;

@@ -7,6 +7,8 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 
+#define moreram_osx_compile_barrier() __asm__ __volatile__ ("" : : : "memory")
+
 typedef struct moreram_osx_node_s moreram_osx_node_t;
 struct moreram_osx_node_s
 {
@@ -89,24 +91,32 @@ moreram_osx_finalize()
         return;
     }
 
+    [g_moreram_osx_context.lock lock];
+
     // Reset standard mem func pointers.
     g_moreram_osx_context.libc_malloc_func = 0;
     g_moreram_osx_context.libc_realloc_func = 0;
     g_moreram_osx_context.libc_calloc_func = 0;
     g_moreram_osx_context.libc_free_func = 0;
 
-    // Delete lock.
-    [g_moreram_osx_context.lock release];
-    g_moreram_osx_context.lock = 0;
-
     // Delete resources.
     moreram_osx_node_t* node = g_moreram_osx_context.head;
     while(node)
     {
        moreram_osx_node_t* next = node->next;
+
+       moreram_osx_compile_barrier();
        [node->buffer release];
+       moreram_osx_compile_barrier();
+
        node = next;
     }
+
+    [g_moreram_osx_context.lock unlock];
+
+    // Delete lock.
+    [g_moreram_osx_context.lock release];
+    g_moreram_osx_context.lock = 0;
 
     g_moreram_osx_context.head = 0;
     g_moreram_osx_context.tail = 0;

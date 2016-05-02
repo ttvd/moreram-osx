@@ -7,7 +7,7 @@ are only triggered when regular malloc/realloc/calloc/free calls fail. Otherwise
 * This is inspired by [graphitemaster/moreram](https://github.com/graphitemaster/moreram)
 * This is perhaps a joke.
 * This can potentially waste memory (due to shadowing).
-* This is still work in progress.
+* This is still work in progress and there are bugs. Please report.
 
 ## License
 
